@@ -15,9 +15,9 @@ int arr_tmp[len-1];
 
 max1 = arr[0];
 
-    for (i = 0; i < len; i++)
+    for (i = 1; i < len; i++)
     {
-        if (max1<arr[i])
+        if (max1 < arr[i])
         {
 			arr_tmp[i-1] = max1;
 			max1 = arr[i];
@@ -25,15 +25,14 @@ max1 = arr[0];
 		else
 			arr_tmp[i-1] = arr[i];
     }
-    
+        
 max2 = arr_tmp[0];
 
-	for (i = 0; i < len-1; i++)
+	for (i = 1; i < len-1; i++)
     {
-        if (max2<arr_tmp[i])
-			max2 = arr[i];
+        if (max2 < arr_tmp[i])
+			max2 = arr_tmp[i];
     }
-	
 return max1+max2;
 }
 
