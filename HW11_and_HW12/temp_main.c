@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include "temp_api.h"
 
@@ -7,14 +6,16 @@
 
 int main(int argc, char *argv[])
 {
-	int16_t year;
-	int8_t month, month_aim, day, hour, minute; 
-	int8_t temp, temp_min, temp_max;
+	int8_t month_aim, temp_min, temp_max;
+	int32_t data_size;
 
 	int month_statistics = -1;
 	int year_statistics = -1;
+	int count = 0;
 		 
-	float temp_average;
+	float month_average;
+	float year_average;
+	float year_average_tmp = 0;
 
 	char file_name[100];
 
@@ -94,66 +95,32 @@ int main(int argc, char *argv[])
 	};
 // -------------------- обработка параметров командной строки -------------------- конец
 
-// ---------------------- считывание входных данных из файла --------------------- начало
-	int i = 0, n = 0;
-	uint32_t line_number = 1;
-	signed char c_tmp, str_tmp[25] = {0};
-	
-	FILE *input_data;
-	input_data = fopen(file_name, "r");
-
 	printf("\n");
+	printf("-----------Read table from file------------------------\n");
+	data_size = Create_Table_from_File(temp_data, file_name);
 	printf("-------------------------------------------------------\n");
-	
-	if (input_data == NULL)
-	{
-		printf("open file error: file not found or name is incorrect\n");
-		return 0;
-	}
+	Print_Table(temp_data, data_size);
+	printf("data_size = %d\n", data_size-1);
+	printf("-----------Sort Tabe by Date---------------------------\n");
+	SortTable_by_Date(temp_data, data_size);
+	Print_Table(temp_data, data_size);
+	printf("data_size = %d\n", data_size-1);
+	printf("-----------Sort Tabe by Temp---------------------------\n");
+	SortTable_by_Temp(temp_data, data_size);
+	Print_Table(temp_data, data_size);
+	printf("data_size = %d\n", data_size-1);
+	printf("-----Del Record by Date (Example 2021.04.16.01.01)-----\n");
+	DelRecord_by_Date(temp_data, &data_size, 2021,04,16,01,01);
+	Print_Table(temp_data, data_size);
+	printf("data_size = %d\n", data_size-1);
+	printf("-----Del Record by Index (del Record with index=1)-----\n");
+	DelRecord_by_Index(temp_data, &data_size,1);
+	Print_Table(temp_data, data_size);
+	printf("data_size = %d\n", data_size-1);
+	printf("-------------------------------------------------------\n");
+	printf("\n");
 
-	
-	do {
-		if(((c_tmp = fgetc(input_data)) != '\n') && (c_tmp != EOF))
-		{
-			str_tmp[i] = c_tmp;
-			i++;
-		}
-		else 
-		{	
-			n = sscanf(str_tmp, "%" SCNd16 ";" 
-								"%" SCNd8  ";" 
-								"%" SCNd8  ";" 
-								"%" SCNd8  ";" 
-								"%" SCNd8  ";" 
-								"%" SCNd8, &year, &month, &day, &hour, &minute, &temp);
-
-			if ((n<6) || (year   < 0)		|| (year   > 10000) 
-					  || (month  < 0)		|| (month  > 12) 
-					  || (day    < 0)		|| (day    > 31) 
-					  || (hour   < 0)		|| (hour   > 24) 
-					  || (minute < 0)		|| (minute > 60) 
-					  || (temp   < -99)		|| (temp   > 99))
-			{
-				printf("ERROR FORMAT in line %d\t\t", line_number);
-				printf("[%s]",str_tmp);
-				printf("\t\tcorrect FORMAT [xxxx;xx;xx;xx;xx;+/-xx] 'x' - positive digits only\n");
-				i = 0;
-				memset(str_tmp, 0, sizeof(str_tmp));
-			}
-			else
-			{
-				AddRecord(temp_data, line_number-1, year, month, day, hour, minute, temp);	
-				line_number++;
-				i = 0;
-				memset(str_tmp, 0, sizeof(str_tmp));
-			}
-		}
-	} while (c_tmp != EOF);
-	
-	fclose (input_data);
-// ---------------------- считывание входных данных из файла --------------------- конец
-
-	uint16_t year_aim = temp_data[0].year; // если по ТЗ в файле данные только за один год
+uint16_t year_aim = temp_data[0].year; // если по ТЗ в файле данные только за один год
 	
 if (month_statistics == -1)
 {
@@ -161,32 +128,53 @@ if (month_statistics == -1)
 	printf("#\tYears\tMonth\tAverage T\tMin T\tMax T\n");
 	for (month_aim = 1; month_aim <= 12; month_aim = month_aim + 1)
 	{
-		temp_average = Average_Month_temp(temp_data, line_number, year_aim, month_aim);
-		temp_min = Min_Month_temp(temp_data, line_number, year_aim, month_aim);
-		temp_max = Max_Month_temp(temp_data, line_number, year_aim, month_aim);
+		month_average = Average_Month_temp(temp_data, data_size, year_aim, month_aim);
+		if (month_average == 100) 
+		{
+			printf("%" SCNd8"\t\t", month_aim);
+			printf("No DATA for this month\n");
+			continue;
+		}
+		else 
+		{
+			year_average_tmp = year_average_tmp + month_average;
+			count++;
+		}
+		temp_min = Min_Month_temp(temp_data, data_size, year_aim, month_aim);
+		temp_max = Max_Month_temp(temp_data, data_size, year_aim, month_aim);
 		printf("%" SCNd8"\t", month_aim);
-		printf("%" SCNd16"\t" "%" SCNd8"\t" "%+2.2f\t\t" "%+" SCNd8"\t" "%+" SCNd8 "\n", year_aim, month_aim, temp_average, temp_min, temp_max);
+		printf("%" SCNd16"\t" "%" SCNd8"\t" "%+2.2f\t\t" "%+" SCNd8"\t" "%+" SCNd8 "\n", year_aim, month_aim, month_average, temp_min, temp_max);
 	}	
 	printf("-------------------------------------------------------\n");
-	temp_average = Average_Year_temp(temp_data, line_number, year_aim);
-	temp_min = Min_Year_temp(temp_data, line_number, year_aim);
-	temp_max = Max_Year_temp(temp_data, line_number, year_aim);
-	printf("Year statistic:   Avarage T = %+2.2f   " "Min T = %+" SCNd8"   " "Max T = %+" SCNd8 "\n",temp_average, temp_min, temp_max);
+	year_average = year_average_tmp / count;
+	temp_min = Min_Year_temp(temp_data, data_size, year_aim);
+	temp_max = Max_Year_temp(temp_data, data_size, year_aim);
+	printf("Year statistic:   Avarage T = %+2.2f   " "Min T = %+" SCNd8"   " "Max T = %+" SCNd8 "\n",year_average, temp_min, temp_max);
 	printf("-------------------------------------------------------\n");
 }
 else
 {
-	temp_average = Average_Month_temp(temp_data, line_number, year_aim, month_aim);
-	temp_min = Min_Month_temp(temp_data, line_number, year_aim, month_aim);
-	temp_max = Max_Month_temp(temp_data, line_number, year_aim, month_aim);
-	
+	month_average = Average_Month_temp(temp_data, data_size, year_aim, month_aim);
+	temp_min = Min_Month_temp(temp_data, data_size, year_aim, month_aim);
+	temp_max = Max_Month_temp(temp_data, data_size, year_aim, month_aim);
+
+	if (month_average == 100) 
+	{
+		printf("-------------------------------------------------------\n");
+		printf("No DATA for this month\n");
+		printf("-------------------------------------------------------\n");
+		free (temp_data);
+		printf("\n");
+		return 0;
+	}	
 	printf("-------------------------------------------------------\n");
 	printf("#\tYears\tMonth\tAverage T\tMin T\tMax T\n");
 	printf("1\t");
-	printf("%" SCNd16"\t" "%" SCNd8"\t" "%+2.2f\t\t" "%+" SCNd8"\t" "%+" SCNd8 "\n", year_aim, month_aim, temp_average, temp_min, temp_max);
+	printf("%" SCNd16"\t" "%" SCNd8"\t" "%+2.2f\t\t" "%+" SCNd8"\t" "%+" SCNd8 "\n", year_aim, month_aim, month_average, temp_min, temp_max);
 	printf("-------------------------------------------------------\n");
 }
 	free (temp_data);
 	printf("\n");
+
 	return 0;
 }
