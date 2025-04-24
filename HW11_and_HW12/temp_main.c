@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
 	printf("\n");
 	printf("-----------Read table from file------------------------\n");
 	data_size = Create_Table_from_File(temp_data, file_name);
+
 	printf("-------------------------------------------------------\n");
 	Print_Table(temp_data, data_size);
 	printf("data_size = %d\n", data_size-1);
